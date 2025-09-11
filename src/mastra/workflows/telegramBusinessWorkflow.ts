@@ -74,6 +74,7 @@ const sendReplyStep = createStep({
   outputSchema: z.object({
     sent: z.boolean().describe("Whether the message was sent successfully"),
     chatId: z.string().optional().describe("Telegram chat ID where message was sent"),
+    messageId: z.number().optional().describe("ID of the sent message"),
   }),
 
   execute: async ({ inputData, mastra }) => {
@@ -94,32 +95,66 @@ const sendReplyStep = createStep({
         return { sent: false };
       }
 
-      // Prepare the reply message for Telegram
-      const telegramMessage = {
+      // Get the Telegram bot token
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      
+      if (!botToken) {
+        logger?.warn('⚠️ [TelegramWorkflow] TELEGRAM_BOT_TOKEN not configured', {
+          chatId,
+          messagePreview: inputData.response.substring(0, 50),
+        });
+        // In development, return success to allow testing without actual sending
+        return {
+          sent: true,
+          chatId: chatId.toString(),
+        };
+      }
+
+      // Prepare the Telegram API request
+      const telegramApiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+      const messagePayload = {
         chat_id: chatId,
         text: inputData.response,
         parse_mode: "Markdown",
         disable_notification: false,
       };
 
-      logger?.info('📨 [TelegramWorkflow] Telegram message prepared', {
+      logger?.info('📨 [TelegramWorkflow] Sending message to Telegram API', {
         chatId,
         messageLength: inputData.response.length,
         parseMode: "Markdown",
       });
 
-      // Note: In this environment, the actual Telegram API call will be handled 
-      // by the trigger system when the workflow is integrated with Telegram.
-      // This step prepares the message format and logs the intent to send.
-      
-      logger?.info('✅ [TelegramWorkflow] Reply prepared for Telegram delivery', {
+      // Send the message via Telegram HTTP API
+      const response = await fetch(telegramApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(messagePayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        logger?.error('❌ [TelegramWorkflow] Telegram API error', {
+          status: response.status,
+          error: result.description || 'Unknown error',
+          chatId,
+        });
+        return { sent: false, chatId: chatId.toString() };
+      }
+
+      logger?.info('✅ [TelegramWorkflow] Message sent successfully', {
         chatId,
+        messageId: result.result?.message_id,
         sent: true,
       });
 
       return {
         sent: true,
         chatId: chatId.toString(),
+        messageId: result.result?.message_id,
       };
     } catch (error) {
       logger?.error('❌ [TelegramWorkflow] Failed to send reply', {

@@ -16,6 +16,8 @@ import { orderManagementTool } from "./tools/orderManagementTool";
 import { adminOrderTool } from "./tools/adminOrderTool";
 import { customerNotificationTool } from "./tools/customerNotificationTool";
 import { telegramBusinessAgent } from "./agents/telegramBusinessAgent";
+import { telegramBusinessWorkflow } from "./workflows/telegramBusinessWorkflow";
+import { registerTelegramTrigger } from "../triggers/telegramTriggers";
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -61,7 +63,7 @@ class ProductionPinoLogger extends MastraLogger {
 export const mastra = new Mastra({
   storage: sharedPostgresStorage,
   agents: { telegramBusinessAgent },
-  workflows: {},
+  workflows: { telegramBusinessWorkflow },
   mcpServers: {
     allTools: new MCPServer({
       name: "allTools",
@@ -129,6 +131,53 @@ export const mastra = new Mastra({
         // 3. Establishing a publish-subscribe system for real-time monitoring
         //    through the workflow:${workflowId}:${runId} channel
       },
+      // Telegram trigger for handling incoming messages
+      ...registerTelegramTrigger({
+        triggerType: "telegram/message",
+        handler: async (mastra: Mastra, triggerInfo: any) => {
+          const logger = mastra.getLogger();
+          logger?.info("📱 [Telegram Trigger] New message received", { 
+            userName: triggerInfo.params?.userName,
+            messagePreview: triggerInfo.params?.message?.substring(0, 50),
+          });
+
+          // Extract message details
+          const messageData = triggerInfo.payload;
+          const userName = triggerInfo.params?.userName || "unknown";
+          // Use stable thread ID based on chat ID for conversation memory
+          const chatId = messageData?.message?.chat?.id || messageData?.chat_id || userName;
+          const threadId = `telegram/${chatId}`;
+
+          logger?.info("🚀 [Telegram Trigger] Starting workflow", {
+            threadId,
+            userName,
+          });
+
+          try {
+            // Create and start the workflow run
+            const run = await mastra.getWorkflow("telegramBusinessWorkflow").createRunAsync();
+            const result = await run.start({
+              inputData: {
+                message: JSON.stringify(messageData),
+                threadId,
+              }
+            });
+
+            logger?.info("✅ [Telegram Trigger] Workflow completed", {
+              threadId,
+              success: true,
+            });
+
+            // Don't return the result, handler expects void
+          } catch (error) {
+            logger?.error("❌ [Telegram Trigger] Workflow failed", {
+              error: error instanceof Error ? error.message : String(error),
+              threadId,
+            });
+            throw error;
+          }
+        },
+      }),
     ],
   },
   logger:
