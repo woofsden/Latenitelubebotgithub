@@ -13,6 +13,7 @@ import { productCatalogTool } from "./tools/productCatalogTool";
 import { locationVerificationTool } from "./tools/locationVerificationTool";
 import { cryptoPaymentTool } from "./tools/cryptoPaymentTool";
 import { orderManagementTool } from "./tools/orderManagementTool";
+import { adminOrderTool } from "./tools/adminOrderTool";
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -63,7 +64,7 @@ export const mastra = new Mastra({
     allTools: new MCPServer({
       name: "allTools",
       version: "1.0.0",
-      tools: { productCatalogTool, locationVerificationTool, cryptoPaymentTool, orderManagementTool },
+      tools: { productCatalogTool, locationVerificationTool, cryptoPaymentTool, orderManagementTool, adminOrderTool },
     }),
   },
   bundler: {
