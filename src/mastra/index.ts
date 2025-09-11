@@ -9,6 +9,10 @@ import { z } from "zod";
 
 import { sharedPostgresStorage } from "./storage";
 import { inngest, inngestServe } from "./inngest";
+import { productCatalogTool } from "./tools/productCatalogTool";
+import { locationVerificationTool } from "./tools/locationVerificationTool";
+import { cryptoPaymentTool } from "./tools/cryptoPaymentTool";
+import { orderManagementTool } from "./tools/orderManagementTool";
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -59,7 +63,7 @@ export const mastra = new Mastra({
     allTools: new MCPServer({
       name: "allTools",
       version: "1.0.0",
-      tools: {},
+      tools: { productCatalogTool, locationVerificationTool, cryptoPaymentTool, orderManagementTool },
     }),
   },
   bundler: {
