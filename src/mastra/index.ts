@@ -15,6 +15,7 @@ import { cryptoPaymentTool } from "./tools/cryptoPaymentTool";
 import { orderManagementTool } from "./tools/orderManagementTool";
 import { adminOrderTool } from "./tools/adminOrderTool";
 import { customerNotificationTool } from "./tools/customerNotificationTool";
+import { telegramBusinessAgent } from "./agents/telegramBusinessAgent";
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -59,7 +60,7 @@ class ProductionPinoLogger extends MastraLogger {
 
 export const mastra = new Mastra({
   storage: sharedPostgresStorage,
-  agents: {},
+  agents: { telegramBusinessAgent },
   workflows: {},
   mcpServers: {
     allTools: new MCPServer({

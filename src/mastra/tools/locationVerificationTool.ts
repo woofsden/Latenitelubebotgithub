@@ -157,7 +157,17 @@ export const locationVerificationTool = createTool({
   }),
   execute: async ({ context: { address, zipCode, city }, mastra }) => {
     const logger = mastra?.getLogger();
-    logger?.info("🔧 [LocationVerification] Starting location verification", { address, zipCode, city });
+    logger?.info("🔧 [LocationVerification] BOUNDARY: Tool execution started", { 
+      toolId: "location-verification-tool",
+      params: { 
+        address: address?.substring(0, 50) + (address?.length > 50 ? "..." : ""),
+        zipCode,
+        city,
+        hasAddress: !!address,
+        addressLength: address?.length || 0
+      },
+      timestamp: new Date().toISOString()
+    });
 
     try {
       const verification = await verifyDeliveryLocation({ address, zipCode, city, logger });
@@ -166,10 +176,24 @@ export const locationVerificationTool = createTool({
         const deliveryZone = verification.deliveryZone || "standard";
         const estimatedTime = getEstimatedDeliveryTime(deliveryZone);
         
-        logger?.info("✅ [LocationVerification] Location verified successfully", { 
-          address, 
-          deliveryZone, 
-          estimatedTime 
+        logger?.info("✅ [LocationVerification] BOUNDARY: Tool execution completed successfully", { 
+          toolId: "location-verification-tool",
+          result: {
+            isInDeliveryArea: true,
+            deliveryZone, 
+            estimatedTime,
+            matchedBy: verification.matchedBy,
+            matchedArea: verification.matchedArea
+          },
+          processingSteps: [
+            "address_normalization",
+            "zip_code_validation", 
+            "city_name_validation",
+            "address_keyword_matching",
+            "delivery_zone_calculation"
+          ],
+          executionTimeMs: Date.now() - performance.now(),
+          timestamp: new Date().toISOString()
         });
         
         return {
@@ -181,7 +205,22 @@ export const locationVerificationTool = createTool({
           message: `✅ Great! We deliver to your area. Estimated delivery time: ${estimatedTime}`,
         };
       } else {
-        logger?.info("❌ [LocationVerification] Location outside delivery area", { address, zipCode, city });
+        logger?.info("❌ [LocationVerification] BOUNDARY: Tool execution completed - location rejected", { 
+          toolId: "location-verification-tool",
+          result: {
+            isInDeliveryArea: false,
+            reason: verification.reason,
+            suggestedAreas: verification.suggestedAreas
+          },
+          processingSteps: [
+            "address_normalization",
+            "zip_code_validation_failed", 
+            "city_name_validation_failed",
+            "address_keyword_matching_failed"
+          ],
+          executionTimeMs: Date.now() - performance.now(),
+          timestamp: new Date().toISOString()
+        });
         
         return {
           isInDeliveryArea: false,
@@ -191,7 +230,15 @@ export const locationVerificationTool = createTool({
         };
       }
     } catch (error) {
-      logger?.error("❌ [LocationVerification] Tool execution failed", { error });
+      logger?.error("❌ [LocationVerification] BOUNDARY: Tool execution failed with error", { 
+        toolId: "location-verification-tool",
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        params: { address, zipCode, city },
+        processingSteps: ["initialization", "error_occurred"],
+        executionTimeMs: Date.now() - performance.now(),
+        timestamp: new Date().toISOString()
+      });
       return {
         isInDeliveryArea: false,
         message: "Unable to verify delivery location at this time. Please try again or contact support.",

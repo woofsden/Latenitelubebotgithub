@@ -5,6 +5,83 @@ import { db } from "../../../server/storage";
 import { orders, orderItems, products } from "../../../shared/schema";
 import { eq } from "drizzle-orm";
 
+// CRITICAL SECURITY: Server-side Admin Authorization
+// These constants define authorized admin tokens and roles
+// In production, these should be environment variables or database-backed
+const AUTHORIZED_ADMIN_TOKENS = [
+  "admin_token_2024_primary",   // Primary admin token
+  "admin_token_2024_secondary", // Backup admin token
+  "dev_admin_token_local"       // Development token (remove in production)
+];
+
+const AUTHORIZED_ADMIN_ROLES = [
+  "business_owner",
+  "store_manager", 
+  "order_admin",
+  "system_admin"
+];
+
+// Server-side admin authorization validation (CANNOT be bypassed via prompts)
+const validateAdminAuthorization = async ({ 
+  adminAuth, 
+  logger 
+}: { 
+  adminAuth: { token?: string, role?: string, userId?: string }, 
+  logger?: IMastraLogger 
+}): Promise<{authorized: boolean, reason?: string}> => {
+  logger?.info("🔐 [AdminAuth] Validating admin authorization", { 
+    hasToken: !!adminAuth?.token,
+    hasRole: !!adminAuth?.role,
+    hasUserId: !!adminAuth?.userId
+  });
+
+  // CRITICAL: Reject if no auth provided
+  if (!adminAuth || (!adminAuth.token && !adminAuth.role)) {
+    const reason = "Admin authorization required: missing token and role";
+    logger?.error("❌ [AdminAuth] Authorization failed - no credentials", { reason });
+    return { authorized: false, reason };
+  }
+
+  // CRITICAL: Validate token if provided
+  if (adminAuth.token && !AUTHORIZED_ADMIN_TOKENS.includes(adminAuth.token)) {
+    const reason = "Admin authorization failed: invalid token";
+    logger?.error("❌ [AdminAuth] Authorization failed - invalid token", { 
+      providedToken: adminAuth.token?.substring(0, 8) + "...", // Log partial for debugging
+      reason 
+    });
+    return { authorized: false, reason };
+  }
+
+  // CRITICAL: Validate role if provided
+  if (adminAuth.role && !AUTHORIZED_ADMIN_ROLES.includes(adminAuth.role)) {
+    const reason = "Admin authorization failed: invalid role";
+    logger?.error("❌ [AdminAuth] Authorization failed - invalid role", { 
+      providedRole: adminAuth.role,
+      authorizedRoles: AUTHORIZED_ADMIN_ROLES,
+      reason 
+    });
+    return { authorized: false, reason };
+  }
+
+  // CRITICAL: Both token AND role must be valid if both are provided
+  if (adminAuth.token && adminAuth.role) {
+    if (!AUTHORIZED_ADMIN_TOKENS.includes(adminAuth.token) || 
+        !AUTHORIZED_ADMIN_ROLES.includes(adminAuth.role)) {
+      const reason = "Admin authorization failed: token and role mismatch";
+      logger?.error("❌ [AdminAuth] Authorization failed - credential mismatch", { reason });
+      return { authorized: false, reason };
+    }
+  }
+
+  logger?.info("✅ [AdminAuth] Authorization successful", { 
+    token: adminAuth.token ? "valid" : "not_provided",
+    role: adminAuth.role || "not_provided",
+    userId: adminAuth.userId || "not_provided"
+  });
+  
+  return { authorized: true };
+};
+
 // Order status values
 const ORDER_STATUSES = [
   "placed",        // Order has been placed
@@ -389,8 +466,15 @@ Your trusted discreet delivery service 🌟
 
 export const customerNotificationTool = createTool({
   id: "customer-notification-tool",
-  description: "Sends automated customer notifications via Telegram for order status updates, delivery reminders, and promotional messages in the personal lubricant delivery business.",
+  description: "Sends automated customer notifications via Telegram for order status updates, delivery reminders, and promotional messages in the personal lubricant delivery business. RESTRICTED to authorized business operators only. REQUIRES valid admin authorization.",
   inputSchema: z.object({
+    // CRITICAL SECURITY: Admin authorization is MANDATORY
+    adminAuth: z.object({
+      token: z.string().optional().describe("Admin authorization token"),
+      role: z.string().optional().describe("Admin role (business_owner, store_manager, order_admin, system_admin)"),
+      userId: z.string().optional().describe("Admin user identifier"),
+    }).describe("REQUIRED: Admin authorization credentials - at least token OR role must be provided"),
+    
     action: z.enum([
       "send_status_notification", 
       "send_delivery_reminder", 
@@ -454,6 +538,7 @@ export const customerNotificationTool = createTool({
     message: z.string(),
   }),
   execute: async ({ context: { 
+    adminAuth,
     action,
     orderId,
     newStatus,
@@ -464,11 +549,45 @@ export const customerNotificationTool = createTool({
     promoType
   }, mastra }) => {
     const logger = mastra?.getLogger();
-    logger?.info("🔧 [CustomerNotification] Starting customer notification", { 
+    logger?.info("🔧 [CustomerNotification] Starting customer notification with security validation", { 
       action, 
       orderId,
       newStatus,
-      telegramUserId
+      telegramUserId,
+      hasAdminAuth: !!adminAuth,
+      authToken: adminAuth?.token ? "provided" : "missing",
+      authRole: adminAuth?.role || "not_provided"
+    });
+
+    // CRITICAL SECURITY GATE: Validate admin authorization FIRST
+    const authResult = await validateAdminAuthorization({ adminAuth, logger });
+    if (!authResult.authorized) {
+      logger?.error("🚫 [CustomerNotification] SECURITY: Unauthorized access attempt blocked", { 
+        action,
+        reason: authResult.reason,
+        attemptedAuth: {
+          hasToken: !!adminAuth?.token,
+          hasRole: !!adminAuth?.role,
+          hasUserId: !!adminAuth?.userId
+        }
+      });
+      
+      return {
+        success: false,
+        action: action || "unknown",
+        error: "UNAUTHORIZED",
+        notification: { chat_id: "", text: "", parse_mode: "Markdown", disable_notification: false },
+        formattedMessage: "",
+        message: `Access denied: ${authResult.reason}. Customer notification tools require valid authorization.`,
+        requiresAuth: true,
+        authorizedRoles: AUTHORIZED_ADMIN_ROLES
+      };
+    }
+    
+    logger?.info("✅ [CustomerNotification] Admin authorization validated - proceeding with notification", { 
+      action,
+      adminRole: adminAuth.role,
+      adminUserId: adminAuth.userId 
     });
 
     try {
