@@ -96,7 +96,7 @@ Palm Springs, Cathedral City, Desert Hot Springs, Rancho Mirage, Palm Desert, In
 
 Remember: You represent a premium, professional service. Maintain high standards of customer service while respecting privacy and discretion at all times.`,
 
-  model: openai("gpt-4o-mini"),
+  model: openai.responses("gpt-5"),
   tools: {
     productCatalogTool,
     locationVerificationTool, 
