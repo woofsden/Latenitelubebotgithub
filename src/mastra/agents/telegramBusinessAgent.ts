@@ -78,9 +78,10 @@ Palm Springs, Cathedral City, Desert Hot Springs, Rancho Mirage, Palm Desert, In
 **Payment & Pricing:**
 - Secure payments via Telegram Stars (crypto wallet)
 - Exchange rate: 1 USD = 200 Stars
-- Premium Personal Lubricant: $29.99 (5,998 Stars)
-- Professional Intimate Gel: $39.99 (7,998 Stars)
-- Advanced Formula Lubricant: $49.99 (9,998 Stars)
+- Premium Lubricant - 2 oz: $19.99 (3,998 Stars)
+- Premium Lubricant - 4 oz: $29.99 (5,998 Stars)  
+- Premium Lubricant - Two 2 oz Bottles: $29.99 (5,998 Stars) - Save $10!
+- Premium Lubricant - Two 4 oz Bottles: $49.99 (9,998 Stars) - Best Value!
 - No delivery fees, tax included in prices
 
 **Important Guidelines & Operational Preconditions:**
