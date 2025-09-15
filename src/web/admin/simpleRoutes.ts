@@ -1,5 +1,6 @@
 import { validateCredentials, createSession, requireAuth } from './auth';
 import { sharedPostgresStorage } from '../../mastra/storage';
+import { sql } from 'drizzle-orm';
 
 export const adminRoutes = {
   // Authentication endpoint
@@ -48,16 +49,11 @@ export const adminRoutes = {
       const db = sharedPostgresStorage.db;
       
       // Simple queries to get stats
-      const orderCountQuery = 'SELECT COUNT(*) as total_orders FROM orders';
-      const pendingOrdersQuery = 'SELECT COUNT(*) as pending_orders FROM orders WHERE status NOT IN (\'delivered\', \'cancelled\')';
-      const revenueQuery = 'SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders';
-      const productCountQuery = 'SELECT COUNT(*) as active_products FROM products WHERE is_active = true';
-
       const [orderCount, pendingOrders, revenue, productCount] = await Promise.all([
-        db.execute(orderCountQuery),
-        db.execute(pendingOrdersQuery),
-        db.execute(revenueQuery),
-        db.execute(productCountQuery)
+        db.execute(sql`SELECT COUNT(*) as total_orders FROM orders`),
+        db.execute(sql`SELECT COUNT(*) as pending_orders FROM orders WHERE status NOT IN ('delivered', 'cancelled')`),
+        db.execute(sql`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders`),
+        db.execute(sql`SELECT COUNT(*) as active_products FROM products WHERE is_active = true`)
       ]);
 
       const stats = {
@@ -82,7 +78,7 @@ export const adminRoutes = {
       }
 
       const db = sharedPostgresStorage.db;
-      const ordersQuery = `
+      const orders = await db.execute(sql`
         SELECT 
           o.*,
           json_agg(
@@ -97,9 +93,7 @@ export const adminRoutes = {
         LEFT JOIN products p ON oi.product_id = p.id
         GROUP BY o.id
         ORDER BY o.created_at DESC
-      `;
-
-      const orders = await db.execute(ordersQuery);
+      `);
 
       res.json({ orders });
     } catch (error) {
@@ -133,8 +127,11 @@ export const adminRoutes = {
       }
 
       const db = sharedPostgresStorage.db;
-      const updateQuery = `UPDATE orders SET status = '${status}', updated_at = NOW() WHERE id = ${orderId}`;
-      await db.execute(updateQuery);
+      await db.execute(sql`
+        UPDATE orders 
+        SET status = ${status}, updated_at = NOW()
+        WHERE id = ${orderId}
+      `);
 
       res.json({
         success: true,
@@ -154,8 +151,7 @@ export const adminRoutes = {
       }
 
       const db = sharedPostgresStorage.db;
-      const productsQuery = 'SELECT * FROM products ORDER BY name';
-      const products = await db.execute(productsQuery);
+      const products = await db.execute(sql`SELECT * FROM products ORDER BY name`);
 
       res.json({ products });
     } catch (error) {
@@ -181,8 +177,11 @@ export const adminRoutes = {
       }
 
       const db = sharedPostgresStorage.db;
-      const updateQuery = `UPDATE products SET stock = ${stock}, updated_at = NOW() WHERE id = ${productId}`;
-      await db.execute(updateQuery);
+      await db.execute(sql`
+        UPDATE products 
+        SET stock = ${stock}, updated_at = NOW()
+        WHERE id = ${productId}
+      `);
 
       res.json({
         success: true,
