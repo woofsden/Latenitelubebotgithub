@@ -1,10 +1,16 @@
 import { createHash, randomBytes } from 'crypto';
 
-// Simple admin credentials - in production, use proper authentication
+// Admin credentials loaded from environment variables
 const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  // Password: 'admin123' hashed with SHA-256
-  passwordHash: '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'
+  username: process.env.ADMIN_USERNAME || 'admin',
+  passwordHash: process.env.ADMIN_PASSWORD_HASH || (() => {
+    // Fallback: hash the password from env var if hash not provided
+    const password = process.env.ADMIN_PASSWORD;
+    if (!password) {
+      throw new Error('ADMIN_PASSWORD or ADMIN_PASSWORD_HASH must be set in environment variables');
+    }
+    return createHash('sha256').update(password).digest('hex');
+  })()
 };
 
 // Store active sessions in memory (in production, use Redis or database)
