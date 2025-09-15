@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Palm Springs Delivery Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+        }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard {
+            display: none;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar a {
+            text-decoration: none;
+            color: #555;
+            padding: 8px 12px;
+            display: block;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .sidebar a:hover {
+            background-color: #f0f0f0;
+        }
+
+        .sidebar a.active {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .main-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-placed { background: #e3f2fd; color: #1976d2; }
+        .status-received { background: #f3e5f5; color: #7b1fa2; }
+        .status-in-progress { background: #fff3e0; color: #f57c00; }
+        .status-out-for-delivery { background: #e8f5e8; color: #388e3c; }
+        .status-delivered { background: #e8f5e8; color: #2e7d32; }
+        .status-cancelled { background: #ffebee; color: #d32f2f; }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                order: 2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="auth-section" class="auth-container">
+        <div class="header">
+            <h1>🔐 Admin Login</h1>
+            <p>Palm Springs Delivery Service</p>
+        </div>
+        
+        <div id="auth-alert" class="alert hidden"></div>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <div id="dashboard-section" class="container hidden">
+        <div class="header">
+            <h1>📊 Admin Dashboard</h1>
+            <p>Palm Springs Delivery Service - Order Management System</p>
+            <button id="logout-btn" class="btn-secondary" style="float: right; margin-top: -40px;">Logout</button>
+        </div>
+
+        <div id="dashboard-alert" class="alert hidden"></div>
+
+        <div class="stats" id="stats-section">
+            <div class="stat-card">
+                <div class="stat-number" id="total-orders">-</div>
+                <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pending-orders">-</div>
+                <div class="stat-label">Pending Orders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="revenue">-</div>
+                <div class="stat-label">Total Revenue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="products-count">-</div>
+                <div class="stat-label">Active Products</div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="sidebar">
+                <h3>Navigation</h3>
+                <ul>
+                    <li><a href="#orders" class="nav-link active" data-section="orders">📦 Orders</a></li>
+                    <li><a href="#products" class="nav-link" data-section="products">🛍️ Products</a></li>
+                    <li><a href="#notifications" class="nav-link" data-section="notifications">📱 Send Notifications</a></li>
+                </ul>
+            </div>
+
+            <div class="main-content">
+                <div id="orders-section" class="content-section">
+                    <h2>📦 Order Management</h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <button id="refresh-orders" class="btn-secondary">🔄 Refresh Orders</button>
+                        <select id="status-filter" style="width: auto; margin-left: 10px;">
+                            <option value="">All Statuses</option>
+                            <option value="placed">Placed</option>
+                            <option value="received">Received</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="out_for_delivery">Out for Delivery</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Products</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table">
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 40px;">Loading orders...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="products-section" class="content-section hidden">
+                    <h2>🛍️ Product Management</h2>
+                    
+                    <button id="refresh-products" class="btn-secondary">🔄 Refresh Products</button>
+                    
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Name</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-table">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 40px;">Loading products...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="notifications-section" class="content-section hidden">
+                    <h2>📱 Send Customer Notifications</h2>
+                    
+                    <form id="notification-form">
+                        <div class="form-group">
+                            <label for="notification-customer">Customer Telegram ID</label>
+                            <input type="text" id="notification-customer" name="customer" placeholder="Enter customer Telegram ID" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="notification-type">Notification Type</label>
+                            <select id="notification-type" name="type" required>
+                                <option value="">Select notification type</option>
+                                <option value="order_update">Order Status Update</option>
+                                <option value="delivery_reminder">Delivery Reminder</option>
+                                <option value="promotional">Promotional Message</option>
+                                <option value="custom">Custom Message</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="notification-message">Message</label>
+                            <textarea id="notification-message" name="message" rows="4" placeholder="Enter your message here..." required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+                        </div>
+                        
+                        <button type="submit">📤 Send Notification</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/admin/js/dashboard.js"></script>
+</body>
+</html>

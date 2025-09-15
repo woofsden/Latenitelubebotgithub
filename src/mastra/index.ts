@@ -131,6 +131,61 @@ export const mastra = new Mastra({
         // 3. Establishing a publish-subscribe system for real-time monitoring
         //    through the workflow:${workflowId}:${runId} channel
       },
+      // Admin dashboard routes
+      {
+        path: "/admin",
+        method: "GET",
+        createHandler: async () => {
+          return async (c) => {
+            const html = await import('fs').then(fs => fs.readFileSync('./src/web/public/index.html', 'utf-8'));
+            return c.html(html);
+          };
+        }
+      },
+      {
+        path: "/admin/js/dashboard.js",
+        method: "GET", 
+        createHandler: async () => {
+          return async (c) => {
+            const js = await import('fs').then(fs => fs.readFileSync('./src/web/public/js/dashboard.js', 'utf-8'));
+            c.header('Content-Type', 'application/javascript');
+            return c.text(js);
+          };
+        }
+      },
+      {
+        path: "/admin/api/login",
+        method: "POST",
+        createHandler: async () => {
+          return async (c) => {
+            const body = await c.req.json();
+            // Simple admin login (username: admin, password: admin123)
+            if (body.username === 'admin' && body.password === 'admin123') {
+              return c.json({ success: true, token: 'admin-token-' + Date.now() });
+            }
+            return c.json({ success: false, message: 'Invalid credentials' }, 401);
+          };
+        }
+      },
+      {
+        path: "/admin/api/stats",
+        method: "GET",
+        createHandler: async ({ mastra }) => {
+          return async (c) => {
+            const authHeader = c.req.header('Authorization');
+            if (!authHeader || !authHeader.includes('admin-token')) {
+              return c.json({ success: false, message: 'Unauthorized' }, 401);
+            }
+            // Return sample stats for now
+            return c.json({
+              totalOrders: 5,
+              pendingOrders: 2,
+              revenue: 239.92,
+              activeProducts: 4
+            });
+          };
+        }
+      },
       // Telegram trigger for handling incoming messages
       ...registerTelegramTrigger({
         triggerType: "telegram/message",
