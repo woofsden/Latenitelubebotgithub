@@ -203,59 +203,158 @@ class AdminDashboard {
     renderOrders() {
         const tbody = document.getElementById('orders-table');
         
+        // Clear existing content
+        tbody.textContent = '';
+        
         if (this.orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px;">No orders found</td></tr>';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.setAttribute('colspan', '7');
+            cell.style.textAlign = 'center';
+            cell.style.padding = '40px';
+            cell.textContent = 'No orders found';
+            row.appendChild(cell);
+            tbody.appendChild(row);
             return;
         }
 
-        tbody.innerHTML = this.orders.map(order => `
-            <tr>
-                <td>#${order.id}</td>
-                <td>${order.customer_name || 'Customer'}</td>
-                <td>${this.formatOrderItems(order.items)}</td>
-                <td>$${parseFloat(order.total_amount || 0).toFixed(2)}</td>
-                <td><span class="status status-${order.status.replace(' ', '-')}">${order.status}</span></td>
-                <td>${new Date(order.created_at).toLocaleDateString()}</td>
-                <td>
-                    <select onchange="dashboard.updateOrderStatus(${order.id}, this.value)" style="padding: 4px;">
-                        <option value="">Update Status</option>
-                        <option value="placed" ${order.status === 'placed' ? 'selected' : ''}>Placed</option>
-                        <option value="received" ${order.status === 'received' ? 'selected' : ''}>Received</option>
-                        <option value="in_progress" ${order.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
-                        <option value="out_for_delivery" ${order.status === 'out_for_delivery' ? 'selected' : ''}>Out for Delivery</option>
-                        <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
-                        <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                    </select>
-                </td>
-            </tr>
-        `).join('');
+        this.orders.forEach(order => {
+            const row = document.createElement('tr');
+            
+            // Order ID
+            const idCell = document.createElement('td');
+            idCell.textContent = `#${order.id || ''}`;
+            row.appendChild(idCell);
+            
+            // Customer Name
+            const customerCell = document.createElement('td');
+            customerCell.textContent = order.customer_name || 'Customer';
+            row.appendChild(customerCell);
+            
+            // Items
+            const itemsCell = document.createElement('td');
+            itemsCell.textContent = this.formatOrderItems(order.items);
+            row.appendChild(itemsCell);
+            
+            // Total Amount
+            const totalCell = document.createElement('td');
+            totalCell.textContent = `$${parseFloat(order.total_amount || 0).toFixed(2)}`;
+            row.appendChild(totalCell);
+            
+            // Status
+            const statusCell = document.createElement('td');
+            const statusSpan = document.createElement('span');
+            statusSpan.className = `status status-${(order.status || '').replace(/[^a-zA-Z0-9_-]/g, '')}`;
+            statusSpan.textContent = order.status || '';
+            statusCell.appendChild(statusSpan);
+            row.appendChild(statusCell);
+            
+            // Created Date
+            const dateCell = document.createElement('td');
+            dateCell.textContent = new Date(order.created_at).toLocaleDateString();
+            row.appendChild(dateCell);
+            
+            // Actions
+            const actionsCell = document.createElement('td');
+            const select = document.createElement('select');
+            select.style.padding = '4px';
+            select.addEventListener('change', (e) => {
+                this.updateOrderStatus(order.id, e.target.value);
+            });
+            
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Update Status';
+            select.appendChild(defaultOption);
+            
+            const statuses = ['placed', 'received', 'in_progress', 'out_for_delivery', 'delivered', 'cancelled'];
+            statuses.forEach(status => {
+                const option = document.createElement('option');
+                option.value = status;
+                option.textContent = status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
+                if (order.status === status) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            actionsCell.appendChild(select);
+            row.appendChild(actionsCell);
+            
+            tbody.appendChild(row);
+        });
     }
 
     renderProducts() {
         const tbody = document.getElementById('products-table');
         
+        // Clear existing content
+        tbody.textContent = '';
+        
         if (this.products.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px;">No products found</td></tr>';
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.setAttribute('colspan', '6');
+            cell.style.textAlign = 'center';
+            cell.style.padding = '40px';
+            cell.textContent = 'No products found';
+            row.appendChild(cell);
+            tbody.appendChild(row);
             return;
         }
 
-        tbody.innerHTML = this.products.map(product => `
-            <tr>
-                <td>#${product.id}</td>
-                <td>${product.name}</td>
-                <td>$${parseFloat(product.price || 0).toFixed(2)}</td>
-                <td>${product.stock || 0}</td>
-                <td><span class="status ${product.is_active ? 'status-delivered' : 'status-cancelled'}">${product.is_active ? 'Active' : 'Inactive'}</span></td>
-                <td>
-                    <button onclick="dashboard.updateProductStock(${product.id})" class="btn-secondary" style="padding: 4px 8px; font-size: 12px;">Update Stock</button>
-                </td>
-            </tr>
-        `).join('');
+        this.products.forEach(product => {
+            const row = document.createElement('tr');
+            
+            // Product ID
+            const idCell = document.createElement('td');
+            idCell.textContent = `#${product.id || ''}`;
+            row.appendChild(idCell);
+            
+            // Product Name
+            const nameCell = document.createElement('td');
+            nameCell.textContent = product.name || '';
+            row.appendChild(nameCell);
+            
+            // Price
+            const priceCell = document.createElement('td');
+            priceCell.textContent = `$${parseFloat(product.price || 0).toFixed(2)}`;
+            row.appendChild(priceCell);
+            
+            // Stock
+            const stockCell = document.createElement('td');
+            stockCell.textContent = product.stock || 0;
+            row.appendChild(stockCell);
+            
+            // Status
+            const statusCell = document.createElement('td');
+            const statusSpan = document.createElement('span');
+            statusSpan.className = `status ${product.is_active ? 'status-delivered' : 'status-cancelled'}`;
+            statusSpan.textContent = product.is_active ? 'Active' : 'Inactive';
+            statusCell.appendChild(statusSpan);
+            row.appendChild(statusCell);
+            
+            // Actions
+            const actionsCell = document.createElement('td');
+            const button = document.createElement('button');
+            button.className = 'btn-secondary';
+            button.style.padding = '4px 8px';
+            button.style.fontSize = '12px';
+            button.textContent = 'Update Stock';
+            button.addEventListener('click', () => {
+                this.updateProductStock(product.id);
+            });
+            actionsCell.appendChild(button);
+            row.appendChild(actionsCell);
+            
+            tbody.appendChild(row);
+        });
     }
 
     formatOrderItems(items) {
         if (!items || !Array.isArray(items)) return 'N/A';
-        return items.map(item => `${item.quantity}x ${item.product_name}`).join(', ');
+        // Safe string formatting - no HTML injection possible since this is used in textContent
+        return items.map(item => `${item.quantity || 0}x ${item.product_name || 'Unknown'}`).join(', ');
     }
 
     filterOrders() {
