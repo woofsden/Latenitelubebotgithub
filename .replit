@@ -1,4 +1,4 @@
-modules = ["nodejs-22", "postgresql-16"]
+modules = ["nodejs-22", "python-with-prybar-3.10", "nodejs-with-prybar-18", "zig-0.11", "ruff", "pyright-extended", "web", "vue-node-20", "typescript-language-server", "swift-5.8", "rust-nightly", "r-4.2", "r-4.5", "python-3.10", "python-3.11", "python-base-3.11", "python-3.12", "python-3.8", "postgresql-17", "nodejs-14", "nodejs-18", "nodejs-19", "nodejs-20", "nodejs-23", "nodejs-24", "nix", "lua-5.2", "hermit-0.38.2", "java-graalvm22.3", "haskell-ghc9.8", "go-1.24", "elixir-1_18", "dart-3.8", "clojure-1.12", "cpp-clang14", "bun-1.2", "angular-node-24", "dotnet-10.0", "pyright", "ruby-3.2", "php-8.4", "gcloud", "deno-2"]
 
 [agent]
 stack = "AGENT_STACK"
@@ -6,7 +6,7 @@ integrations = ["agentstack-trigger-telegram:1.0.0"]
 
 [nix]
 channel = "stable-24_11"
-packages = ["jq", "haskellPackages.debian-binary"]
+packages = ["jq", "haskellPackages.debian-binary", "xcbuild", "ironicclient", "emacsPackages.embrace"]
 
 [deployment]
 build = ["bash", "scripts/build.sh"]
